@@ -20,8 +20,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 generation = client.generations.create(
-    prompt="A teddy bear in sunglasses playing electric guitar and dancing",
+    prompt="a cartoon video of a flower blooming in a coffee shop",
 )
+# generation = client.generations.create(
+#     prompt="Man giving a wink with a discrete lip smile",
+#     keyframes={
+#       "frame0": {
+#         "type": "image",
+#         "url": "https://drive.google.com/file/d/1k0T7NJOmupt2FXIdcF89AzhdSOoTZ1Vn/view?usp=sharing"
+#       }
+#     }
+# )
 
 # Check the status of the generation
 generation_id = generation.id
@@ -54,8 +63,15 @@ while attempt < max_attempts:
             logger.error("Failed to download the video")
         break
     elif status == "failed":
-        error_info = client.generations.get(generation_id).error
-        logger.error(f"Generation failed. Error: {error_info}")
+        generation = client.generations.get(generation_id)
+        if generation.state == "failed":
+            failure_reason = generation.failure_reason
+            logger.error(f"Generation failed. Reason: {failure_reason}")
+            if failure_reason == "Frame moderation failed":
+                logger.warning("The input image may have violated content guidelines. Please check your input and try again with a different image.")
+        else:
+            # Handle unexpected state
+            logger.warning(f"Unexpected state encountered: {generation.state}")
         break
     else:
         attempt += 1
